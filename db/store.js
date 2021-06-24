@@ -1,49 +1,60 @@
+// look up uuid (util.promisify)- use ID in database
+const util = require('util');
 const fs = require('fs');
-const path = require('path');
+const { v4: uuidv4} = require('uuid')
 
-const createNewNote = (note, notesArray) => {
-    // adds new note to notes array
-    notesArray.push(note)
+const readFileAsync = util.promisify(fs.readFile);
+const writeFileAsync = util.promisify(fs.writeFile);
 
-    // saves notes array to db.json
-    fs.writeFileSync(
-        path.join(__dirname, '../db/db.json'),
-        JSON.stringify({ notes: notesArray }, null, 2)
-    );
-};
 
-// finds specific note by ID from notes array
-const findById = (id, notesArray) => {
-    const result = notesArray.filter(note => note.id === id)[0];
-    return result;
-};
+class Store {
 
-// edits existing note
-const editNote = (editedNote, notesArray) => {
-    // gets index of note to be edited
-    const index = notesArray.findIndex(note => note.id === editedNote.id);
+read(){
+    return readFileAsync('./db/db.json', 'utf8')
+}
 
-    // removes old note, inserts revised note
-    notesArray.splice(index, 1);
-    notesArray.splice(index, 0, editedNote);
+write(note){
+    return writeFileAsync('./db/db.json', JSON.stringify(note))
+}
 
-    // rewrites db.json with revised note
-    fs.writeFileSync(
-        path.join(__dirname, '../db/db.json'),
-        JSON.stringify({ notes: notesArray }, null, 2)
-    )
-};
+getNotes() {
+    return this.read().then((notes) => {
+         //parse notes to return them as parsed notes
+         let parsedNotes
+         try{
+             parsedNotes=[].concat(JSON.parse(notes))
+         } catch(error){
+             parsedNotes=[]
+         }
+return parsedNotes
 
-const removeNote = (note, notesArray) => {
-    // removes specific note from notes array
-    const index = notesArray.indexOf(note);
-    notesArray.splice(index, 1);
+    })
+}
 
-    // rewrites db.json with new array
-    fs.writeFileSync(
-        path.join(__dirname, '../db/db.json'),
-        JSON.stringify({ notes: notesArray }, null, 2)
-    );
-};
+addNote(note) {
+    const { title, text } = note;
+    const uniqueNote = { title, text, id: uuidv4() }
 
-module.exports = { createNewNote, findById, editNote, removeNote };
+    return this.getNotes()
+    .then((notes)=>[...notes, uniqueNote])
+    .then((newNotes)=>this.write(newNotes))
+    .then(()=>uniqueNote)
+}
+
+
+deleteNote(id) {
+    return this.getNotes() 
+    .then((notes)=> notes.filter(
+        (note)=> note.id !== id))
+        .then((filterNotes) => this.write(filterNotes))
+
+}
+
+
+
+
+
+}
+
+
+module.exports = new Store();
