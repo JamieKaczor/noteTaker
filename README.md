@@ -12,7 +12,7 @@ npm i
 ![screenshot](public/assets/images/screenshot.png)
 
 ## Deployed Link
-
+[noteTaker](https://note-takerjjk.herokuapp.com/)
 
 ### Questions
 If you have any questions, please refer to my Github page, [JamieKaczor](https://github.com/JamieKaczor), or contact me through my email, Dignanjk@aol.com
